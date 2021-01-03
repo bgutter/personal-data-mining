@@ -89,7 +89,7 @@ transactions.recategorize( transactions.income().in_accounts( "Discover" ), "Cas
 transactions.recategorize( transactions.expenses().when( before="1/1/2017" ).search( "ford" ), "Auto Maintenance", inplace=True )
 
 # Get total spending per vendor (roughly) since the start of 2020
-transactions.transfers( invert=True ).when( after="1/1/2020" ).expenses().by_description().totals().sort_values()
+transactions.when( after="1/1/2020" ).expenses().by_description().totals().sort_values()
 
 # Remembering that dataframe APIs are available, note that you can use .to_csv() to inspect any transaction subsets
 transactions.search( "conoco" ).when( before="4/23/2015" ).to_csv( "./old-car-gas-purcahses.csv" )

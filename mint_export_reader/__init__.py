@@ -7,7 +7,6 @@ import numpy as np
 
 class TransactionsExport:
     """
-
     This really just wraps a pandas DataFrame.
     """
 
@@ -170,7 +169,7 @@ class TransactionsExport:
             # Take the first & move on
             #
             if len( df ) > 0:
-                transfer_transaction_mask[ row.Index ] = True
+                transfer_transaction_mask[ self.df.index.get_loc( row.Index ) ] = True
                 transfer_transaction_mask[ self.df.index.get_loc( df.index[0] ) ] = True
 
         if invert:
