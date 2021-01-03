@@ -107,20 +107,24 @@ class TransactionsExport:
         """
         return TransactionsExport( self.df[ self.df.amount <= 0 ].copy() )
 
-    def transfers( self, invert=False, time_window=None ):
+    def transfers( self, invert=False, time_window=None, allow_internal=True ):
         """Filter for transactions which are part of transfer pairs.
 
         A "transfer pair" is a pair of transactions satisfying the
         following conditions:
         - Same amount with different sign (e.g. $5.23 and $-5.23)
         - Occurring around the same time
-        - Different accounts
 
         Note that this does not use Mint's "Transfer" category at all.
         Our definition intentionally includes things like simple
         refunds (one-item purchase followed by it being refunded for
         the exact amount). It also includes credit card payments, loan
         payments, and so on.
+
+        By default, it also allows transfers within accounts, which
+        removes spurious pseudo-transactions caused by things like
+        changing stock portfolios. This cane be disabled with
+        allow_internal=False.
 
         With invert=True, retain only transactions which are not
         transfer transactions. This is the more useful application.
@@ -136,6 +140,9 @@ class TransactionsExport:
         time_window : None or pandas timedelta
             Override the default window to search for duplicate
             transactions. If not given, one week is used.
+        allow_internal : bool
+            Whether or not a transfer pair can consist of transactions
+            in the same account.
 
         Returns
         -------
@@ -161,8 +168,12 @@ class TransactionsExport:
             df = df[ not_already_marked_msk ]
             opposite_cost_msk = ( df.amount == -row.amount )
             df = df[ opposite_cost_msk ]
-            diff_account_msk = df.account != row.account
-            df = df[ diff_account_msk ]
+
+            if not allow_internal:
+                # Not allowed to have internal transfers -- take only transactions from other accounts
+                diff_account_msk = df.account != row.account
+                df = df[ diff_account_msk ]
+
             in_range_msk = ( df.date - row.date ).abs() <= time_window
             df = df[ in_range_msk ]
 
