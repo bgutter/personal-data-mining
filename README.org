@@ -1,0 +1,148 @@
+#+TITLE: Personal Data Mining
+
+This repo consists of a collection of Python packages that I used to
+analyze my personal data. Generally speaking, they're intended to be
+used either in an Emacs org-file using org-babel, or, in an IPython
+REPL.
+
+* Mint Transactions Exports
+
+=mint_export_reader= is a small convenience library for analyzing CSV exports from Mint.com. Under the hood, it's mostly just Pandas.
+
+** Quick Start
+
+#+begin_src python
+from mint_export_reader import *
+
+# Read in the transactions
+# The numbers in all examples below have been replaced with 1's and 2's at random
+transactions = TransactionsExport.from_file( "./transactions-from-mint.csv" )
+
+# Remove any zero-sum transfer transaction pairs (moving cash between accounts, credit card payments, etc)
+# I always do this immediately after loading data from file, because I never care about these transactions, and
+# it's a little too slow to run on each query.
+transactions = transactions.transfers( invert=True )
+
+# Aside from the augmented APIs we'll show below, the transactions object can be treated as a pandas DataFrame
+# We can use the pandas DataFrame.sample() method to get 5 random transactions
+transactions.sample( 5 )
+# Out[232]:
+#                                          description                               original_description             category             account  Labels  Notes   amount       date
+# 8078                                    Examplething  EXAMPLE THING numbers 34234 HERE 32323023=23=2...             Shopping       Mulligan Bank     NaN    NaN  -221.00 2015-11-01
+# 2209                                          Amazon               AMAZON GO AMZN.COM/BILLWA12121212212             Shopping            Discover     NaN    NaN   -12.12 2019-09-24
+# 167   Internet transfer to Interest Checking account  Internet transfer to Interest Checking account...             Transfer  Some Checking Acct     NaN    NaN -1212.00 2020-12-06
+# 1847                                           Geico     GEICO *AUTO 1212121212121212121212121212121212       Auto Insurance            Discover     NaN    NaN   -12.12 2019-12-05
+# 1583                                     - THANK YOU                         ONLINE PAYMENT - THANK YOU  Credit Card Payment       Mulligan Bank     NaN    NaN   121.12 2020-01-31
+
+# Get yearly total income
+transactions.income().yearly().totals()
+# Out[215]:
+# date
+# 2013     12121.12
+# 2014     21211.12
+# 2015    212121.12
+# 2016    222111.11
+# 2017    212121.12
+# 2018    121221.21
+# 2019    212221.22
+# 2020    212212.22
+# Name: amount, dtype: float64
+
+# Get all money spent at Walmart (and wal-mart, WAL-MART, etc)
+transactions.search( "wal.*mart" ).expenses().total()
+# Out[212]: -1212.12
+
+# Get all spending per category in 2018
+transactions.when( after="1/1/2018", before="1/1/2019" ).expenses().by_category().totals()
+# Out[213]:
+# category
+# Advertising           -12.12
+# Air Travel          -1212.12
+# Alcohol & Bars      -1212.12
+# Amusement             -12.12
+# Auto & Transport     -121.12
+#                       ...
+# Travel                -12.12
+# Tuition              -121.12
+# Utilities           -1212.12
+# Vacation              -12.12
+# Name: amount, Length: 21, dtype: float64
+
+# Get all accounts which were expensed in summer 2013
+transactions.when( after="5/1/2013", before="8/1/2013" ).expenses().accounts()
+# Out[221]:
+# array(['FREE CHECKING x121212', 'Discover', 'STATEMENT SAVINGS x121212'],
+#       dtype=object)
+
+# Get all veterinary expenses in two accounts by year
+transactions.expenses().in_accounts( [ "Mulligan Bank", "Discover" ] ).in_categories( "Veterinary" ).yearly().totals()
+# Out[234]:
+# date
+# 2017   -121.12
+# 2019   -121.22
+# 2020   -222.12
+# Name: amount, dtype: float64
+
+# Set the category for all income from the "Discover" account to "Cash Back"
+# Then set the category for all transactions matching "ford" before 2016 as "Auto Maintenance"
+transactions.recategorize( transactions.income().in_accounts( "Discover" ), "Cash Back", inplace=True )
+transactions.recategorize( transactions.expenses().when( before="1/1/2017" ).search( "ford" ), "Auto Maintenance", inplace=True )
+
+# Get total spending per vendor (roughly) since the start of 2020
+transactions.transfers( invert=True ).when( after="1/1/2020" ).expenses().by_description().totals().sort_values()
+
+# Remembering that dataframe APIs are available, note that you can use .to_csv() to inspect any transaction subsets
+transactions.search( "conoco" ).when( before="4/23/2015" ).to_csv( "./old-car-gas-purcahses.csv" )
+#+end_src
+
+** API Overview
+
+See source comments for full documentation.
+
+Aside from what is documented here, any valid =pandas.DataFrame= operation can be applied to a =TransactionsExport= object.
+
+Similarly, any valid =pandas.GroupBy= operation may be applied to a =TransactionsExportCollection= object (which is returned by all of the grouping APIs).
+
+*** Filtering APIs
+
+| API                                                     | Description                                                                              |
+|---------------------------------------------------------+------------------------------------------------------------------------------------------|
+| =search( regex, invert=False )=                         | Keep only transactions whose description (original or final) contains regex. Invertible. |
+| =income()=                                              | Keep only transactions whose amount is more than zero.                                   |
+| =expenses()=                                            | Keep only transactions whose amount is less than or equal to zero.                       |
+| =transfers( invert=False, time_window=None )=           | Keep only transactions which are part of a transfer pair. Invertible.                    |
+| =when( after=None, before=None, invert=False )=         | Keep only transactions which occur in a time range. Invertible.                          |
+| =in_accounts( account_or_accounts, invert=False )=      | Keep only transactions occurring in a set of accounts. Invertible.                       |
+| =in_categories( category_or_categories, invert=False )= | Keep only transactions occurring in a set of categories. Invertible.                     |
+
+*** Editing APIs
+
+| API                                                | Description                                          |
+|----------------------------------------------------+------------------------------------------------------|
+| =recategorize( transaction_subset, new_category )= | Change the category for a selection of transactions. |
+
+*** Descriptive APIs
+
+| API                       | Description                                                                     |
+|---------------------------+---------------------------------------------------------------------------------|
+| =accounts()=              | Get all unique accounts referenced in the current transaction set.              |
+| =categories()=            | Get all unique categories referenced in the current transaction set.            |
+| =descriptions()=          | Get all unique descriptions referenced in the current transaction set.          |
+| =original_descriptions()= | Get all unique original descriptions referenced in the current transaction set. |
+| =total()=                 | Get the sum of all amounts of all transactions in the current set.              |
+
+*** Grouping APIs
+
+| API                         | Description                                                                           |
+|-----------------------------+---------------------------------------------------------------------------------------|
+| =by_category()=             | Group transactions by category, returning a TransactionsExportCollection.             |
+| =by_account()=              | Group transactions by account, returning a TransactionsExportCollection.              |
+| =by_description()=          | Group transactions by description, returning a TransactionsExportCollection.          |
+| =by_original_description()= | Group transactions by original description, returning a TransactionsExportCollection. |
+| =yearly()=                  | Group transactions by calendar year, returning a TransactionsExportCollection.        |
+
+*** Grouped (TransactionsExportCollection) APIs
+
+| API        | Description                       |
+|------------+-----------------------------------|
+| =totals()= | Applies ".total()" to each group. |
