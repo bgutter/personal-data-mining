@@ -157,6 +157,8 @@ class TransactionsExport:
             # Find all matching transactions, narrowing cheaply/quickly first
             #
             df = self.df
+            not_already_marked_msk = ~transfer_transaction_mask
+            df = df[ not_already_marked_msk ]
             opposite_cost_msk = ( df.amount == -row.amount )
             df = df[ opposite_cost_msk ]
             diff_account_msk = df.account != row.account
