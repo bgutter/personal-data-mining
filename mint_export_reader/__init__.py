@@ -277,7 +277,38 @@ class TransactionsExport:
             msk = ~msk
         return TransactionsExport( self.df[ msk ].copy() )
 
+    def with_amount( self, above=None, below=None, invert=False ):
+        """Filter by amount.
+
+        Filter for transactions whose amount is above, below, or
+        between some values.
+
+        Parameters
+        ----------
+        above : None or float
+            If given, only match values at or above this value.
+        below : None or float
+            If given, only match values below this value.
+        invert : bool
+            If True, return only transactions outside the defined
+            price range.
+
+        Returns
+        -------
+        ret : TransactionsExport
+            The filtered transactions.
+        """
+        msk = np.ones( len( self.df ) ).astype( bool )
+        if above is not None:
+            msk &= self.df.amount >= above
+        if below is not None:
+            msk &= self.df.amount < below
+        if invert:
+            msk = ~msk
+        return TransactionsExport( self.df[ msk ].copy() )
+
     def in_accounts( self, account_or_accounts, invert=False ):
+
         """Filter by accounts used.
 
         Remove all transactions in accounts other than those
