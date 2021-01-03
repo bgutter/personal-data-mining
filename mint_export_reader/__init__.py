@@ -418,6 +418,36 @@ class TransactionsExport:
         """
         return TransactionsExportCollection( self.df.groupby( self.df.date.dt.year ) )
 
+    def monthly( self ):
+        """Split by month.
+
+        Returns
+        -------
+        ret : TransactionsExportCollection
+            The transactions, split by month.
+        """
+        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='M' ) ) )
+
+    def weekly( self ):
+        """Split by week.
+
+        Returns
+        -------
+        ret : TransactionsExportCollection
+            The transactions, split by week.
+        """
+        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='W' ) ) )
+
+    def daily( self ):
+        """Split by day.
+
+        Returns
+        -------
+        ret : TransactionsExportCollection
+            The transactions, split by day.
+        """
+        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='d' ) ) )
+
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped dataframe."""
         return getattr( self.df, attr )
