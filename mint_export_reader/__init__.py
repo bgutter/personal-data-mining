@@ -595,7 +595,7 @@ class TransactionsExportCollection:
             The sum of the amount of all transactions in each subset.
             Index is the label defining each subset.
         """
-        return self.groupby[ "amount" ].sum().sort_values()
+        return self.groupby[ "amount" ].sum()
 
     def transaction_counts( self ):
         """Number of transactions for each subset.
@@ -608,7 +608,7 @@ class TransactionsExportCollection:
             The count of transactions in each subset. Index is the
             label defining each subset.
         """
-        return self.groupby.size().sort_values()
+        return self.groupby.size()
 
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped groupby."""
