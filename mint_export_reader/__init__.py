@@ -285,7 +285,7 @@ class TransactionsExport:
         Parameters
         ----------
         year : int
-            The year, an integer between 1900 and 9999.
+            The year, an integer.
 
         Returns
         ----------

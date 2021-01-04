@@ -112,6 +112,7 @@ Similarly, any valid =pandas.GroupBy= operation may be applied to a =Transaction
 | =expenses()=                                            | Keep only transactions whose amount is less than or equal to zero.                       |
 | =transfers( invert=False, time_window=None )=           | Keep only transactions which are part of a transfer pair. Invertible.                    |
 | =when( after=None, before=None, invert=False )=         | Keep only transactions which occur in a time range. Invertible.                          |
+| =in_year( year )=                                       | Keep only transactions which occur in a particular year.                                 |
 | =with_amount( above=None, below=None, invert=False )=   | Keep only transactions with occur in an amount range. Invertible.                        |
 | =in_accounts( account_or_accounts, invert=False )=      | Keep only transactions occurring in a set of accounts. Invertible.                       |
 | =in_categories( category_or_categories, invert=False )= | Keep only transactions occurring in a set of categories. Invertible.                     |
@@ -149,6 +150,7 @@ All grouping APIs return a =TransactionsExportCollection=.
 
 *** Grouped (TransactionsExportCollection) APIs
 
-| API        | Description                       |
-|------------+-----------------------------------|
-| =totals()= | Applies ".total()" to each group. |
+| API                    | Description                                   |
+|------------------------+-----------------------------------------------|
+| =totals()=             | Applies ".total()" to each group.             |
+| =transaction_counts()= | Get the number of transactions in each group. |
