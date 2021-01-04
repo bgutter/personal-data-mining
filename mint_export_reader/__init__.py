@@ -1,5 +1,5 @@
 """
-mint_export_reader - a small convenience library for analyzing export CSVs from Mint.com
+financial_export_reader - a small convenience library for analyzing export CSVs from Mint and Tiller Money
 """
 
 import pandas as pd
@@ -11,15 +11,18 @@ class TransactionsExport:
     """
 
     @staticmethod
-    def from_file( export_file ):
-        """Create a TransactionsExport from file
+    def from_mint( export_file ):
+        """Create a TransactionsExport from a Mint export.
 
-        Given a file path, initialize a TransactionsExport.
+        Download a transactions CSV from Mint by clicking the "export
+        all transactions" link beneath the transaction list. Ensure no
+        filters are applied.
 
         Parameters
         ----------
         export_file : str or file object
             Export CSV to load.
+
         """
         df = pd.read_csv( export_file )
 
@@ -45,8 +48,49 @@ class TransactionsExport:
         # Create the object
         return TransactionsExport( df )
 
+    @staticmethod
+    def from_tiller( export_file ):
+        """Create a TransactionsExport from a Tiller Money export.
+
+        Download the transaction page of the Google Sheet as a CSV.
+
+        Parameters
+        ----------
+        export_file : str or file object
+            Export CSV to load.
+        """
+        df = pd.read_csv( export_file )
+
+        # Replace Date with a proper date index
+        df[ "date" ] = pd.to_datetime( df[ "Date" ] )
+        df.drop( "Date", axis="columns", inplace=True )
+
+        # convert amount to simple floats
+        df[ "amount" ] = df.Amount.replace( "[\$,]", "", regex=True ).astype( float )
+        df.drop( "Amount", axis="columns", inplace=True )
+
+        # Drop month and week -- they're redundant
+        df.drop( "Month", axis="columns", inplace=True )
+        df.drop( "Week", axis="columns", inplace=True )
+
+        # Drop transaction ID -- just don't have a use for it
+        df.drop( "Transaction ID", axis="columns", inplace=True )
+
+        # Rename the others
+        df.rename( { "Account": "account",
+                     "Account #": "account_number",
+                     "Institution": "institution",
+                     "Category": "category",
+                     "Description": "description",
+                     "Full Description": "original_description",
+                     "Date Added": "date_added",
+                     "Check Number": "check_number"}, axis=1, inplace=True )
+
+        # Create the object
+        return TransactionsExport( df )
+
     def __init__( self, df ):
-        """Don't use this, use TransactionsExport.from_file()"""
+        """Don't use this, use TransactionsExport.from_mint() or TransactionsExport.from_tiller()"""
         self.df = df
 
     def __repr__( self ):
