@@ -277,6 +277,27 @@ class TransactionsExport:
             msk = ~msk
         return TransactionsExport( self.df[ msk ].copy() )
 
+    def in_year( self, year ):
+        """Filter for transactions occurring in a particular year.
+
+        Return only transactions occurring in a specific year.
+
+        Parameters
+        ----------
+        year : int
+            The year, an integer between 1900 and 9999.
+
+        Returns
+        ----------
+        ret : TransactionsExport
+            Filtered transactions.
+        """
+        try:
+            year = int( year )
+        except:
+            raise ValueError( "Could not coerce {} into an int.".format( year ) )
+        return self.when( after="1/1/{}".format( year ), before="1/1/{}".format( year + 1 ) )
+
     def with_amount( self, above=None, below=None, invert=False ):
         """Filter by amount.
 
@@ -480,7 +501,9 @@ class TransactionsExport:
 
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped dataframe."""
-        return getattr( self.df, attr )
+        if hasattr( self.df, attr ):
+            return getattr( self.df, attr )
+        raise AttributeError( "'{}' is not a known attribute of either {} or {}".format( attr, self.__class__.__name__, self.df.__class__.__name__ ) )
 
 class TransactionsExportCollection:
     """
