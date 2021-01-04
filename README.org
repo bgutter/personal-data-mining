@@ -23,6 +23,15 @@ transactions = TransactionsExport.from_file( "./transactions-from-mint.csv" )
 # it's a little too slow to run on each query.
 transactions = transactions.transfers( invert=True )
 
+# Where did most of my discretionary spending occur in 2020?
+transactions.in_accounts(["Mulligan Bank", "Discover"]).expenses().in_year( 2020 ).in_categories( "Shopping" ).by_description().totals().sort_values()
+# Out[305]:
+# description
+# Amazon                                  -1212.22
+# Target                                  -1212.11
+# Ab Abebooks                              -121.12
+# Name: amount, dtype: float64
+
 # Aside from the augmented APIs we'll show below, the transactions object can be treated as a pandas DataFrame
 # We can use the pandas DataFrame.sample() method to get 5 random transactions
 transactions.sample( 5 )
