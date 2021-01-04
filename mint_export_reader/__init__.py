@@ -89,6 +89,53 @@ class TransactionsExport:
         # Create the object
         return TransactionsExport( df )
 
+    @staticmethod
+    def from_trp( export_file ):
+        """Create a TransactionsExport from a T Rowe Price workplace retirement export.
+
+        Downloading these files is a PITA, but the transactions sent
+        to Mint/Tiller are not very reliable, so you'll need them.
+
+        Go to your account, then account activity. You can only
+        download one year of data at a time. Check all options shown,
+        select 1/1 to 12/31 for your first year, then click
+        submit. Then click export to csv. Repeat for N years.
+
+        On the bright side, you only need to download the historical
+        files once. In any case, it may pay to implement a scraper.
+
+        Parameters
+        ----------
+        export_file : str or file object
+            Export CSV to load.
+        """
+
+        # Skip the first 2 rows -- just describes the date range used
+        df = pd.read_csv( export_file, skiprows=2 )
+
+        # Replace Date with a proper date index
+        df[ "date" ] = pd.to_datetime( df[ "Date" ] )
+        df.drop( "Date", axis="columns", inplace=True )
+
+        # convert amount to simple floats
+        df[ "amount" ] = df.Amount.replace( "[\$,]", "", regex=True ).astype( float )
+        df.drop( "Amount", axis="columns", inplace=True )
+
+        # Invert the sign on any "Exchange Out" transactions, because...why aren't they already?
+        df.loc[ df[ "Activity Type"].str.strip() == "Exchange Out", "amount" ] = -df.amount
+
+        # Drop shares and price -- we already have the amount column, and don't need the breakdown
+        df.drop( "Shares", axis="columns", inplace=True )
+        df.drop( "Price", axis="columns", inplace=True )
+
+        # Create description by gluing together some relevant columns, then drop them
+        df[ "description" ] = df[ [ "Activity Type", "Source", "Investment" ] ].agg( lambda parts: ", ".join( x.strip() for x in parts ), axis=1 )
+        df[ "original_description" ] = df.description.copy()
+        df.drop( [ "Activity Type", "Source", "Investment" ], axis="columns", inplace=True )
+
+        # Create the object
+        return TransactionsExport( df )
+
     def __init__( self, df ):
         """Don't use this, use TransactionsExport.from_mint() or TransactionsExport.from_tiller()"""
         self.df = df
