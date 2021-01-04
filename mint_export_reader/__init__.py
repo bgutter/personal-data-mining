@@ -81,6 +81,31 @@ class TransactionsExport:
             msk = ~msk
         return TransactionsExport( self.df[ msk ].copy() )
 
+    def account_like( self, regex, invert=False ):
+        """Find transactions whose account name matches regex.
+
+        Search each transactions account name for a given regex, and
+        return a TransactionsExport with the matching (or
+        non-matching) transactions.
+
+        Parameters
+        ----------
+        regex : str
+            The regular expression to apply to account name.
+        invert : bool
+            Whether to invert the match logic, returning only
+            transactions which do not match.
+
+        Returns
+        -------
+        matched_transactions : TransactionsExport
+            The matching transactions.
+        """
+        msk = self.df.account.str.contains( regex, case=False )
+        if invert:
+            msk = ~msk
+        return TransactionsExport( self.df[ msk ].copy() )
+
     def income( self ):
         """Filter only positive valued transactions.
 

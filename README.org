@@ -84,8 +84,10 @@ transactions.expenses().in_accounts( [ "Mulligan Bank", "Discover" ] ).in_catego
 # Name: amount, dtype: float64
 
 # Set the category for all income from the "Discover" account to "Cash Back"
+# Then recategorize transactions in any account named like "EXX..." as a Student Loan payment.
 # Then set the category for all transactions matching "ford" before 2016 as "Auto Maintenance"
 transactions.recategorize( transactions.income().in_accounts( "Discover" ), "Cash Back", inplace=True )
+transactions.recategorize( transactions.account_like( "EXXX.*" ), "Student Loan", inplace=True )
 transactions.recategorize( transactions.expenses().when( before="1/1/2017" ).search( "ford" ), "Auto Maintenance", inplace=True )
 
 # Get total spending per vendor (roughly) since the start of 2020
@@ -108,6 +110,7 @@ Similarly, any valid =pandas.GroupBy= operation may be applied to a =Transaction
 | API                                                     | Description                                                                              |
 |---------------------------------------------------------+------------------------------------------------------------------------------------------|
 | =search( regex, invert=False )=                         | Keep only transactions whose description (original or final) contains regex. Invertible. |
+| =account_like( regex, invert=False )=                   | Keep only transactions whose account contains regex. Invertible.                         |
 | =income()=                                              | Keep only transactions whose amount is more than zero.                                   |
 | =expenses()=                                            | Keep only transactions whose amount is less than or equal to zero.                       |
 | =transfers( invert=False, time_window=None )=           | Keep only transactions which are part of a transfer pair. Invertible.                    |
