@@ -308,7 +308,6 @@ class TransactionsExport:
         return TransactionsExport( self.df[ msk ].copy() )
 
     def in_accounts( self, account_or_accounts, invert=False ):
-
         """Filter by accounts used.
 
         Remove all transactions in accounts other than those
@@ -500,11 +499,24 @@ class TransactionsExportCollection:
 
         Returns
         -------
-        totals : pd.Series
+        totals : pd.Series of float
             The sum of the amount of all transactions in each subset.
             Index is the label defining each subset.
         """
         return self.groupby[ "amount" ].sum()
+
+    def transaction_counts( self ):
+        """Number of transactions for each subset.
+
+        Return the number of transactions in each subset.
+
+        Returns
+        -------
+        count : pd.Series of int
+            The count of transactions in each subset. Index is the
+            label defining each subset.
+        """
+        return self.groupby.size()
 
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped groupby."""
