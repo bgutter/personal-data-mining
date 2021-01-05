@@ -12,11 +12,11 @@ REPL.
 ** Quick Start
 
 #+begin_src python
-from mint_export_reader import *
+import cash_ledger
 
 # Read in the transactions
 # The numbers in all examples below have been replaced with 1's and 2's at random
-transactions = TransactionsExport.from_file( "./transactions-from-mint.csv" )
+transactions = cash_ledger.TransactionLedger.from_mint( "./transactions-from-mint.csv" )
 
 # Remove any zero-sum transfer transaction pairs (moving cash between accounts, credit card payments, etc)
 # I always do this immediately after loading data from file, because I never care about these transactions, and

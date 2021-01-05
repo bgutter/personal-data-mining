@@ -1,18 +1,18 @@
 """
-financial_export_reader - a small convenience library for analyzing export CSVs from Mint and Tiller Money
+cash_ledger.py - a small convenience library for analyzing export CSVs from Mint and Tiller Money
 """
 
 import pandas as pd
 import numpy as np
 
-class TransactionsExport:
+class TransactionLedger:
     """
     This really just wraps a pandas DataFrame.
     """
 
     @staticmethod
     def from_mint( export_file ):
-        """Create a TransactionsExport from a Mint export.
+        """Create a TransactionLedger from a Mint export.
 
         Download a transactions CSV from Mint by clicking the "export
         all transactions" link beneath the transaction list. Ensure no
@@ -46,11 +46,11 @@ class TransactionsExport:
                      "Notes": "notes" }, axis=1, inplace=True )
 
         # Create the object
-        return TransactionsExport( df )
+        return TransactionLedger( df )
 
     @staticmethod
     def from_tiller( export_file ):
-        """Create a TransactionsExport from a Tiller Money export.
+        """Create a TransactionLedger from a Tiller Money export.
 
         Download the transaction page of the Google Sheet as a CSV.
 
@@ -87,11 +87,11 @@ class TransactionsExport:
                      "Check Number": "check_number"}, axis=1, inplace=True )
 
         # Create the object
-        return TransactionsExport( df )
+        return TransactionLedger( df )
 
     @staticmethod
     def from_trp( export_file ):
-        """Create a TransactionsExport from a T Rowe Price workplace retirement export.
+        """Create a TransactionLedger from a T Rowe Price workplace retirement export.
 
         Downloading these files is a PITA, but the transactions sent
         to Mint/Tiller are not very reliable, so you'll need them.
@@ -134,10 +134,10 @@ class TransactionsExport:
         df.drop( [ "Activity Type", "Source", "Investment" ], axis="columns", inplace=True )
 
         # Create the object
-        return TransactionsExport( df )
+        return TransactionLedger( df )
 
     def __init__( self, df ):
-        """Don't use this, use TransactionsExport.from_mint() or TransactionsExport.from_tiller()"""
+        """Don't use this, use TransactionLedger.from_mint() or TransactionLedger.from_tiller()"""
         self.df = df
 
     def __repr__( self ):
@@ -148,7 +148,7 @@ class TransactionsExport:
         """Find transactions matching a regex.
 
         Search each transactions descriptions for a given regex, and
-        return a TransactionsExport with the matching (or
+        return a TransactionLedger with the matching (or
         non-matching) transactions.
 
         Parameters
@@ -162,7 +162,7 @@ class TransactionsExport:
 
         Returns
         -------
-        matched_transactions : TransactionsExport
+        matched_transactions : TransactionLedger
             The matching transactions.
 
         """
@@ -170,13 +170,13 @@ class TransactionsExport:
         msk |= self.df.original_description.str.contains( regex, case=False )
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def account_like( self, regex, invert=False ):
         """Find transactions whose account name matches regex.
 
         Search each transactions account name for a given regex, and
-        return a TransactionsExport with the matching (or
+        return a TransactionLedger with the matching (or
         non-matching) transactions.
 
         Parameters
@@ -189,39 +189,39 @@ class TransactionsExport:
 
         Returns
         -------
-        matched_transactions : TransactionsExport
+        matched_transactions : TransactionLedger
             The matching transactions.
         """
         msk = self.df.account.str.contains( regex, case=False )
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def income( self ):
         """Filter only positive valued transactions.
 
-        Return a TransactionsExport containing only the positive
+        Return a TransactionLedger containing only the positive
         valued transactions.
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions
         """
-        return TransactionsExport( self.df[ self.df.amount > 0 ].copy() )
+        return TransactionLedger( self.df[ self.df.amount > 0 ].copy() )
 
     def expenses( self ):
         """Filter only non-positive valued transactions.
 
-        Return a TransactionsExport containing only the negative
+        Return a TransactionLedger containing only the negative
         and zero valued transactions.
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions
         """
-        return TransactionsExport( self.df[ self.df.amount <= 0 ].copy() )
+        return TransactionLedger( self.df[ self.df.amount <= 0 ].copy() )
 
     def transfers( self, invert=False, time_window=None, allow_internal=True ):
         """Filter for transactions which are part of transfer pairs.
@@ -262,7 +262,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions.
 
         """
@@ -303,7 +303,7 @@ class TransactionsExport:
 
         if invert:
             transfer_transaction_mask = ~transfer_transaction_mask
-        return TransactionsExport( self.df[ transfer_transaction_mask ].copy() )
+        return TransactionLedger( self.df[ transfer_transaction_mask ].copy() )
 
     def accounts( self ):
         """Get all accounts in this export.
@@ -379,7 +379,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             Filtered transactions
         """
         msk = np.ones( len( self.df ) ).astype( bool )
@@ -391,7 +391,7 @@ class TransactionsExport:
             msk &= self.df.date < before
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def in_year( self, year ):
         """Filter for transactions occurring in a particular year.
@@ -405,7 +405,7 @@ class TransactionsExport:
 
         Returns
         ----------
-        ret : TransactionsExport
+        ret : TransactionLedger
             Filtered transactions.
         """
         try:
@@ -432,7 +432,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions.
         """
         msk = np.ones( len( self.df ) ).astype( bool )
@@ -442,7 +442,7 @@ class TransactionsExport:
             msk &= self.df.amount < below
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def in_accounts( self, account_or_accounts, invert=False ):
         """Filter by accounts used.
@@ -459,7 +459,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions
 
         """
@@ -468,17 +468,17 @@ class TransactionsExport:
         msk = self.df.account.isin( account_or_accounts )
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def recategorize( self, other, new_category, inplace=False ):
         """Change the category for a subset of transactions.
 
-        Given another TransactionsExport, change the category of those
+        Given another TransactionLedger, change the category of those
         transactions to a new value.
 
         Parameters
         ----------
-        other : TransactionsExport
+        other : TransactionLedger
             The subset of transactions to recategorize
         new_category : str
             The new category
@@ -487,7 +487,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport or None
+        ret : TransactionLedger or None
             The edited transaction set. None if inplace=True.
         """
         if inplace:
@@ -496,7 +496,7 @@ class TransactionsExport:
             df = self.df.copy()
         df.loc[ other.df.index, "category" ] = new_category
         if not inplace:
-            return TransactionsExport( df )
+            return TransactionLedger( df )
         return None
 
     def in_categories( self, category_or_categories, invert=False ):
@@ -514,7 +514,7 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExport
+        ret : TransactionLedger
             The filtered transactions
 
         """
@@ -523,7 +523,7 @@ class TransactionsExport:
         msk = self.df.category.isin( category_or_categories )
         if invert:
             msk = ~msk
-        return TransactionsExport( self.df[ msk ].copy() )
+        return TransactionLedger( self.df[ msk ].copy() )
 
     def total( self ):
         """Get the sum of all transactions.
@@ -540,80 +540,80 @@ class TransactionsExport:
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by category.
         """
-        return TransactionsExportCollection( self.df.groupby( "category" ) )
+        return TransactionLedgerCollection( self.df.groupby( "category" ) )
 
     def by_account( self ):
         """Split by account.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by account.
         """
-        return TransactionsExportCollection( self.df.groupby( "account" ) )
+        return TransactionLedgerCollection( self.df.groupby( "account" ) )
 
     def by_description( self ):
         """Split by description.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by description.
         """
-        return TransactionsExportCollection( self.df.groupby( "description" ) )
+        return TransactionLedgerCollection( self.df.groupby( "description" ) )
 
     def by_original_description( self ):
         """Split by original description.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by original description.
         """
-        return TransactionsExportCollection( self.df.groupby( "original_description" ) )
+        return TransactionLedgerCollection( self.df.groupby( "original_description" ) )
 
     def yearly( self ):
         """Split by year.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by year.
         """
-        return TransactionsExportCollection( self.df.groupby( self.df.date.dt.year ) )
+        return TransactionLedgerCollection( self.df.groupby( self.df.date.dt.year ) )
 
     def monthly( self ):
         """Split by month.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by month.
         """
-        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='M' ) ) )
+        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='M' ) ) )
 
     def weekly( self ):
         """Split by week.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by week.
         """
-        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='W' ) ) )
+        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='W' ) ) )
 
     def daily( self ):
         """Split by day.
 
         Returns
         -------
-        ret : TransactionsExportCollection
+        ret : TransactionLedgerCollection
             The transactions, split by day.
         """
-        return TransactionsExportCollection( self.df.groupby( pd.Grouper( key="date", freq='d' ) ) )
+        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='d' ) ) )
 
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped dataframe."""
@@ -621,9 +621,9 @@ class TransactionsExport:
             return getattr( self.df, attr )
         raise AttributeError( "'{}' is not a known attribute of either {} or {}".format( attr, self.__class__.__name__, self.df.__class__.__name__ ) )
 
-class TransactionsExportCollection:
+class TransactionLedgerCollection:
     """
-    Represents a collection of `TransactionsExport` objects.
+    Represents a collection of `TransactionLedger` objects.
 
     This really just wraps a pandas GroupBy object.
     """
