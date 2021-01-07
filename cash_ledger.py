@@ -5,14 +5,14 @@ cash_ledger.py - a small convenience library for analyzing export CSVs from Mint
 import pandas as pd
 import numpy as np
 
-class TransactionLedger:
+class CashLedger:
     """
     This really just wraps a pandas DataFrame.
     """
 
     @staticmethod
     def from_mint( export_file ):
-        """Create a TransactionLedger from a Mint export.
+        """Create a CashLedger from a Mint export.
 
         Download a transactions CSV from Mint by clicking the "export
         all transactions" link beneath the transaction list. Ensure no
@@ -46,11 +46,11 @@ class TransactionLedger:
                      "Notes": "notes" }, axis=1, inplace=True )
 
         # Create the object
-        return TransactionLedger( df )
+        return CashLedger( df )
 
     @staticmethod
     def from_tiller( export_file ):
-        """Create a TransactionLedger from a Tiller Money export.
+        """Create a CashLedger from a Tiller Money export.
 
         Download the transaction page of the Google Sheet as a CSV.
 
@@ -87,57 +87,10 @@ class TransactionLedger:
                      "Check Number": "check_number"}, axis=1, inplace=True )
 
         # Create the object
-        return TransactionLedger( df )
-
-    @staticmethod
-    def from_trp( export_file ):
-        """Create a TransactionLedger from a T Rowe Price workplace retirement export.
-
-        Downloading these files is a PITA, but the transactions sent
-        to Mint/Tiller are not very reliable, so you'll need them.
-
-        Go to your account, then account activity. You can only
-        download one year of data at a time. Check all options shown,
-        select 1/1 to 12/31 for your first year, then click
-        submit. Then click export to csv. Repeat for N years.
-
-        On the bright side, you only need to download the historical
-        files once. In any case, it may pay to implement a scraper.
-
-        Parameters
-        ----------
-        export_file : str or file object
-            Export CSV to load.
-        """
-
-        # Skip the first 2 rows -- just describes the date range used
-        df = pd.read_csv( export_file, skiprows=2 )
-
-        # Replace Date with a proper date index
-        df[ "date" ] = pd.to_datetime( df[ "Date" ] )
-        df.drop( "Date", axis="columns", inplace=True )
-
-        # convert amount to simple floats
-        df[ "amount" ] = df.Amount.replace( "[\$,]", "", regex=True ).astype( float )
-        df.drop( "Amount", axis="columns", inplace=True )
-
-        # Invert the sign on any "Exchange Out" transactions, because...why aren't they already?
-        df.loc[ df[ "Activity Type"].str.strip() == "Exchange Out", "amount" ] = -df.amount
-
-        # Drop shares and price -- we already have the amount column, and don't need the breakdown
-        df.drop( "Shares", axis="columns", inplace=True )
-        df.drop( "Price", axis="columns", inplace=True )
-
-        # Create description by gluing together some relevant columns, then drop them
-        df[ "description" ] = df[ [ "Activity Type", "Source", "Investment" ] ].agg( lambda parts: ", ".join( x.strip() for x in parts ), axis=1 )
-        df[ "original_description" ] = df.description.copy()
-        df.drop( [ "Activity Type", "Source", "Investment" ], axis="columns", inplace=True )
-
-        # Create the object
-        return TransactionLedger( df )
+        return CashLedger( df )
 
     def __init__( self, df ):
-        """Don't use this, use TransactionLedger.from_mint() or TransactionLedger.from_tiller()"""
+        """Don't use this, use CashLedger.from_mint() or CashLedger.from_tiller()"""
         self.df = df
 
     def __repr__( self ):
@@ -148,7 +101,7 @@ class TransactionLedger:
         """Find transactions matching a regex.
 
         Search each transactions descriptions for a given regex, and
-        return a TransactionLedger with the matching (or
+        return a CashLedger with the matching (or
         non-matching) transactions.
 
         Parameters
@@ -162,7 +115,7 @@ class TransactionLedger:
 
         Returns
         -------
-        matched_transactions : TransactionLedger
+        matched_transactions : CashLedger
             The matching transactions.
 
         """
@@ -170,13 +123,13 @@ class TransactionLedger:
         msk |= self.df.original_description.str.contains( regex, case=False )
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def account_like( self, regex, invert=False ):
         """Find transactions whose account name matches regex.
 
         Search each transactions account name for a given regex, and
-        return a TransactionLedger with the matching (or
+        return a CashLedger with the matching (or
         non-matching) transactions.
 
         Parameters
@@ -189,39 +142,39 @@ class TransactionLedger:
 
         Returns
         -------
-        matched_transactions : TransactionLedger
+        matched_transactions : CashLedger
             The matching transactions.
         """
         msk = self.df.account.str.contains( regex, case=False )
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def income( self ):
         """Filter only positive valued transactions.
 
-        Return a TransactionLedger containing only the positive
+        Return a CashLedger containing only the positive
         valued transactions.
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions
         """
-        return TransactionLedger( self.df[ self.df.amount > 0 ].copy() )
+        return CashLedger( self.df[ self.df.amount > 0 ].copy() )
 
     def expenses( self ):
         """Filter only non-positive valued transactions.
 
-        Return a TransactionLedger containing only the negative
+        Return a CashLedger containing only the negative
         and zero valued transactions.
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions
         """
-        return TransactionLedger( self.df[ self.df.amount <= 0 ].copy() )
+        return CashLedger( self.df[ self.df.amount <= 0 ].copy() )
 
     def transfers( self, invert=False, time_window=None, allow_internal=True ):
         """Filter for transactions which are part of transfer pairs.
@@ -262,7 +215,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions.
 
         """
@@ -303,7 +256,7 @@ class TransactionLedger:
 
         if invert:
             transfer_transaction_mask = ~transfer_transaction_mask
-        return TransactionLedger( self.df[ transfer_transaction_mask ].copy() )
+        return CashLedger( self.df[ transfer_transaction_mask ].copy() )
 
     def accounts( self ):
         """Get all accounts in this export.
@@ -379,7 +332,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             Filtered transactions
         """
         msk = np.ones( len( self.df ) ).astype( bool )
@@ -391,7 +344,7 @@ class TransactionLedger:
             msk &= self.df.date < before
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def in_year( self, year ):
         """Filter for transactions occurring in a particular year.
@@ -405,7 +358,7 @@ class TransactionLedger:
 
         Returns
         ----------
-        ret : TransactionLedger
+        ret : CashLedger
             Filtered transactions.
         """
         try:
@@ -432,7 +385,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions.
         """
         msk = np.ones( len( self.df ) ).astype( bool )
@@ -442,7 +395,7 @@ class TransactionLedger:
             msk &= self.df.amount < below
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def in_accounts( self, account_or_accounts, invert=False ):
         """Filter by accounts used.
@@ -459,7 +412,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions
 
         """
@@ -468,17 +421,17 @@ class TransactionLedger:
         msk = self.df.account.isin( account_or_accounts )
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def recategorize( self, other, new_category, inplace=False ):
         """Change the category for a subset of transactions.
 
-        Given another TransactionLedger, change the category of those
+        Given another CashLedger, change the category of those
         transactions to a new value.
 
         Parameters
         ----------
-        other : TransactionLedger
+        other : CashLedger
             The subset of transactions to recategorize
         new_category : str
             The new category
@@ -487,7 +440,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger or None
+        ret : CashLedger or None
             The edited transaction set. None if inplace=True.
         """
         if inplace:
@@ -496,7 +449,7 @@ class TransactionLedger:
             df = self.df.copy()
         df.loc[ other.df.index, "category" ] = new_category
         if not inplace:
-            return TransactionLedger( df )
+            return CashLedger( df )
         return None
 
     def in_categories( self, category_or_categories, invert=False ):
@@ -514,7 +467,7 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedger
+        ret : CashLedger
             The filtered transactions
 
         """
@@ -523,7 +476,7 @@ class TransactionLedger:
         msk = self.df.category.isin( category_or_categories )
         if invert:
             msk = ~msk
-        return TransactionLedger( self.df[ msk ].copy() )
+        return CashLedger( self.df[ msk ].copy() )
 
     def total( self ):
         """Get the sum of all transactions.
@@ -540,80 +493,80 @@ class TransactionLedger:
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by category.
         """
-        return TransactionLedgerCollection( self.df.groupby( "category" ) )
+        return CashLedgerCollection( self.df.groupby( "category" ) )
 
     def by_account( self ):
         """Split by account.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by account.
         """
-        return TransactionLedgerCollection( self.df.groupby( "account" ) )
+        return CashLedgerCollection( self.df.groupby( "account" ) )
 
     def by_description( self ):
         """Split by description.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by description.
         """
-        return TransactionLedgerCollection( self.df.groupby( "description" ) )
+        return CashLedgerCollection( self.df.groupby( "description" ) )
 
     def by_original_description( self ):
         """Split by original description.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by original description.
         """
-        return TransactionLedgerCollection( self.df.groupby( "original_description" ) )
+        return CashLedgerCollection( self.df.groupby( "original_description" ) )
 
     def yearly( self ):
         """Split by year.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by year.
         """
-        return TransactionLedgerCollection( self.df.groupby( self.df.date.dt.year ) )
+        return CashLedgerCollection( self.df.groupby( self.df.date.dt.year ) )
 
     def monthly( self ):
         """Split by month.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by month.
         """
-        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='M' ) ) )
+        return CashLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='M' ) ) )
 
     def weekly( self ):
         """Split by week.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by week.
         """
-        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='W' ) ) )
+        return CashLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='W' ) ) )
 
     def daily( self ):
         """Split by day.
 
         Returns
         -------
-        ret : TransactionLedgerCollection
+        ret : CashLedgerCollection
             The transactions, split by day.
         """
-        return TransactionLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='d' ) ) )
+        return CashLedgerCollection( self.df.groupby( pd.Grouper( key="date", freq='d' ) ) )
 
     def __getattr__( self, attr ):
         """Forward all unknown APIs to the wrapped dataframe."""
@@ -621,9 +574,9 @@ class TransactionLedger:
             return getattr( self.df, attr )
         raise AttributeError( "'{}' is not a known attribute of either {} or {}".format( attr, self.__class__.__name__, self.df.__class__.__name__ ) )
 
-class TransactionLedgerCollection:
+class CashLedgerCollection:
     """
-    Represents a collection of `TransactionLedger` objects.
+    Represents a collection of `CashLedger` objects.
 
     This really just wraps a pandas GroupBy object.
     """

@@ -5,18 +5,18 @@ analyze my personal data. Generally speaking, they're intended to be
 used either in an Emacs org-file using org-babel, or, in an IPython
 REPL.
 
-* Mint Transactions Exports
+* Cash Account Exports
 
-=mint_export_reader= is a small convenience library for analyzing CSV exports from Mint.com. Under the hood, it's mostly just Pandas.
+=cash_reader= is a small convenience library for analyzing CSV exports from Mint.com and Tiller Money. Under the hood, it's mostly just Pandas.
 
 ** Quick Start
 
 #+begin_src python
-import cash_ledger
+from cash_ledger import *
 
 # Read in the transactions
 # The numbers in all examples below have been replaced with 1's and 2's at random
-transactions = cash_ledger.TransactionLedger.from_mint( "./transactions-from-mint.csv" )
+transactions = CashLedger.from_mint( "./transactions-from-mint.csv" )
 
 # Remove any zero-sum transfer transaction pairs (moving cash between accounts, credit card payments, etc)
 # I always do this immediately after loading data from file, because I never care about these transactions, and
@@ -162,7 +162,11 @@ All grouping APIs return a =TransactionsExportCollection=.
 
 *** Grouped (TransactionsExportCollection) APIs
 
-| API                    | Description                                   |
-|------------------------+-----------------------------------------------|
-| =totals()=             | Applies ".total()" to each group.             |
-| =transaction_counts()= | Get the number of transactions in each group. |
+| API                    | Description                                   |   |
+|------------------------+-----------------------------------------------+---|
+| =totals()=             | Applies ".total()" to each group.             |   |
+| =transaction_counts()= | Get the number of transactions in each group. |   |
+
+* Stock Account Tracking
+
+Similar to cash account API, documentation is TODO
