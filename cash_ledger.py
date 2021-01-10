@@ -2,6 +2,8 @@
 cash_ledger.py - a small convenience library for analyzing export CSVs from Mint and Tiller Money
 """
 
+from datetime import datetime
+
 import pandas as pd
 import numpy as np
 
@@ -366,6 +368,24 @@ class CashLedger:
         except:
             raise ValueError( "Could not coerce {} into an int.".format( year ) )
         return self.when( after="1/1/{}".format( year ), before="1/1/{}".format( year + 1 ) )
+
+    def last_week( self, n=1 ):
+        """Filter for transactions occurring in the past N weeks.
+
+        Return only transactions occurring in the last N weeks.
+
+        Parameters
+        ----------
+        n : int
+            The number of weeks to reach back, as an int.
+
+        Returns
+        ----------
+        ret : CashLedger
+            Filtered transactions.
+        """
+        start_date = pd.to_datetime( datetime.now() ) - ( n * pd.to_timedelta( "7d" ) )
+        return self.when( after=start_date )
 
     def with_amount( self, above=None, below=None, invert=False ):
         """Filter by amount.
